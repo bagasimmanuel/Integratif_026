@@ -1,5 +1,6 @@
-# Final Project Pemrograman Integratif - 026
-
+# Final Project Pemrograman Integratif
+## Bagas Immanuel Lodianto - 05311840000026
+### Controller utama yang digunakan adalah <b><i>Donasi</i></b>
 ## Struktur Aplikasi
 1. App
  * Config
@@ -113,3 +114,99 @@ Disini dipanggil Model untuk memasukkan data kedalam Database lalu dilakukan set
   Disini Function rekap menerima suatu Argument untuk menunjukkan data sesuai dengan Jenis Kategori yang diinginkan, saat user pertama kali melihat rekap, maka diberi default value "0" dan menunjukkan seluruh data yang ada di database, Berikut view dari <b>Donasi/rekap</b>
 
 ![View Rekap](/imgReadMe/rekap.PNG)
+
+
+# Database
+
+Pada Aplikasi ini digunakan 2 Tabel yaitu <b>Donasi</b> dan <b>Kategori</b> ada pula isi tabel sebagai berikut
+
+![Tabel Donasi](/imgReadMe/tabelDonasi.PNG)
+
+![Tabel Kategori](/imgReadMe/tabelKategori.PNG)
+
+Dengan ID pada tabel kategori yang merupakan Foreign Key dari tabel Donasi
+
+## Models
+
+Pada Models terdapat beberapa function yang dapat digunakan untuk mengambil dan memasukkan data dari database antara lain : <i> getAll, getByID, insertDonasi </i>
+### inserDonasi()
+```
+public function insertDonasi($data){
+    $db = static::getDb();
+    $donasiID = $this->getLastDonasiID();
+    $donasiID = $donasiID+1;
+    $nama = $data['nama'];
+    $date = date("Y-m-d H:i");
+    foreach ($data['donasi'] as $d) :
+        try{
+            $sql = "INSERT INTO donasi VALUES ('',:donasiID,:displayName,:kategori,:kuantitas,:date)";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(":donasiID",$donasiID);
+            $stmt->bindParam(":displayName",$nama);
+            $stmt->bindParam(":kategori",$d['0']);
+            $stmt->bindParam(":kuantitas",$d['2']);
+            $stmt->bindParam(":date",$date);
+
+            $stmt->execute();
+        }catch (PDOException $e) {
+            echo "Terjadi kegagalan saat menyimpan data";
+        }
+    endforeach;
+    return 1;
+}
+```
+Proses memasukkan data kedalam database dimana <i> getLastDonasiID </i> Merupakan function untuk mendapatkan donasiID terakhir yang ada di Database. Seperti yang bisa dilihat terdapat <b>foreach</b> Hal ini dikarenakan proses menginputkan ke database dibedakan untuk setiap Kategori
+
+### getAll()
+
+```
+public function getAll(){
+    $db = static::getDb();
+    $sql = "SELECT * FROM donasi JOIN kategori ON donasi.Kategori = kategori.id";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+```
+Merupakan Function untuk mendapatkan data yang ada di DB untuk ditunjukkan ke View
+###getByID()
+```
+public function getById($id){
+    $db = static::getDb();
+    $sql = "SELECT * FROM `donasi` JOIN KATEGORI ON donasi.Kategori = kategori.id WHERE `Kategori` = $id";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(":id",$id);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+```
+Untuk mendapatkan data berdasarkan ID kategori, disini akan ditampilkan view sesuai dengan sort rekap yg diinginkan User
+
+## Flash Message
+```
+class Flasher{
+
+    public static function setFlash($pesan,$aksi,$tipe){
+        $_SESSION['flash'] = [
+            'pesan' => $pesan,
+            'aksi' => $aksi,
+            'tipe' => $tipe
+        ];
+    }
+
+    public static function flash(){
+
+        if(isset($_SESSION['flash'])){
+            echo
+            '<div class = "alert alert-'. $_SESSION['flash']['tipe'] . ' alert-dismissible fade show" role="alert">
+                Donasi Anda telah <strong> '.$_SESSION['flash']['pesan'] .' </strong> '.$_SESSION['flash']['aksi'].'
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>';
+        }
+        unset($_SESSION['flash']);
+    }
+}
+```
+Merupakan Function untuk mengirim flash Message ketika suatu donasi berhasil dikirimkan, function <b>Set Flash</b> Sendiri digunakan untuk melakukan setFlash message dimana function <b> flash </b> digunakan untuk mengecheck apakah ada session dengan index ['flash'] 
